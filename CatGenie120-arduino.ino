@@ -1,11 +1,10 @@
 /*
- * Прошивка для Arduino UNO для CatGenie 120.
- * (C) Ged http://ged.korshunov.ru  10.05.2018 19:58:15
- * http://new.ged.korshunov.ru/2018/05/lechim-ot-zhadnosti-catgenie-120/ 
+   Прошивка для Arduino UNO для CatGenie 120.
+   (C) Ged http://ged.korshunov.ru  10.05.2018 19:58:15
+   http://new.ged.korshunov.ru/2018/05/lechim-ot-zhadnosti-catgenie-120/
 */
 
 #include <EEPROM.h>
-
 
 #define PIN_ON 0
 // #define MAX_STEP 5
@@ -23,7 +22,6 @@ int MAX_STEP;
 // DELAY_FOR_REPEAT_PROGRAM - Через какое время повторится программа. В часах
 #define DELAY_FOR_REPEAT_PROGRAM 11
 
-
 void pinSetState(String pinList);
 void pinSetState(String pinList, int State);
 
@@ -34,7 +32,6 @@ void pinSetState(String pinList, int State);
 // Kanalizaciya - pin 5
 // Water - pin 6
 // Fan - pin 7
-
 
 int curToiletStep = 0;
 int programRun = 0;
@@ -55,8 +52,6 @@ class ToiletStep {
     int _run;
     unsigned long _startStep, _stopStep;
 };
-
-
 
 void ToiletStep::Start() {
   _run = 1;
@@ -82,7 +77,6 @@ int StatusRead()
   return progStatusRead;
 }
 
-
 void ToiletStep::Stop() {
   _run = 0;
   Serial.println(String( millis() / 100) + " Stop step:" + Name + " pin:" + pin);
@@ -91,8 +85,6 @@ void ToiletStep::Stop() {
   digitalWrite(LED_BUILTIN, LOW); // turn the LED on (HIGH is the voltage level)
 }
 
-
-
 int ToiletStep::checkRun() {
   //Serial.println("Status step:" + Name + ":" + _run);
   return _run;
@@ -100,10 +92,10 @@ int ToiletStep::checkRun() {
 
 int ToiletStep::checkTime() {
   /* Возвращаемые значения
-   *  -1 - Время запуска еще не наступило
-   *  0 - Время запуска наступило, время остановки нет
-   *  1 - Время запуска и остановки прошло
-   */
+      -1 - Время запуска еще не наступило
+      0 - Время запуска наступило, время остановки нет
+      1 - Время запуска и остановки прошло
+  */
   int result = 0;
   if (_startStep > millis()) result = -1;
   else if (_stopStep < millis()) result = 0;
@@ -114,10 +106,10 @@ int ToiletStep::checkTime() {
 }
 
 /* Управления пинами на основании строки в стиле "*01*01"
- * 0 - отключить пин
- * 1 - включить пин
- * любой другой символ - не менять значение пина
- */
+   0 - отключить пин
+   1 - включить пин
+   любой другой символ - не менять значение пина
+*/
 void pinSetState(String pinList)
 {
   int i, a;
@@ -149,38 +141,30 @@ void pinSetState(String pinList)
   }
 }
 
-/* Не совсем понимаю, что я тут наделал и главное - зачем... 
- *  Так же не могу осознать, как оно работает. :-)
- *  
- *  Похоже, передаем строчку с пинами, которые нужно перевести в нужное положение:
- *  Строка вида ххх1х1х1, где 1 - нужный пин, любой другой пин не учитывается.
- */
-void pinSetState(String pinList, int State)
+void pinSetState(String pinList, int NeedState)
 {
-  int i, ii;
-  int length = pinList.length();
-  int newState;
-  String StatePin, StatePinNew;
+  /* Не совсем понимаю, что я тут наделал и главное - зачем...
+     Так же не могу осознать, как оно работает. :-)
 
-  Serial.println("Set to state: " + pinList + " set to " + String(State));
+     Похоже, передаем строчку с пинами, которые нужно перевести в нужное положение, т.е. все нужные пины включить или выключить:
+     pinList - Строка вида ххх1х1х1, где 1 - нужный пин, любой другой пин не учитывается.
+     NeedState - новый статус для нужных пинов. 0 - включен, 1 - выключено
+  */
+  int i;
+  int length = pinList.length();
+  String CurPinState, StatePinNew = "";
+
+  Serial.println("Set to state: " + pinList + " set to " + String(NeedState));
   for (i = 0; i < length; i++)
   {
-    StatePin = pinList.substring(i, i + 1);
-    // Serial.println("Set to state2: " + StatePin + " set to " + String(i));
-    if (StatePin == "1")
-    {
-      // Serial.println("Set to state3: " + StatePin + " set to " + String(i));
-      StatePinNew = "";
-      for (ii = 0; ii < i; ii++)
-      {
-        // Serial.println("Set to state4: " + StatePinNew + " set to " + String(ii));
-        StatePinNew += "-";
-      }
-      StatePinNew += String(State);
-      //Serial.println("Run set pin: " + StatePinNew + " set to " + String(ii));
-      pinSetState(StatePinNew);
-    }
+    CurPinState = pinList.substring(i, i + 1);
+    if (CurPinState == "1")
+      StatePinNew += String(NeedState);
+    else
+      StatePinNew += "-";
   }
+  //      Serial.println("Run set pin: " + StatePinNew + " set to " + String(ii));
+  pinSetState(StatePinNew);
 }
 
 ToiletStep ToiletStep[15]; // Init Steps for work
@@ -242,8 +226,8 @@ void setup() {
   ToiletStep[curToiletStep].pin = "11";
   ToiletStep[curToiletStep].TimeStep = 80;
   /*
-   * Хотели еще потрясти лопаткой, но не хватило памяти.... :-(
-   * 
+     Хотели еще потрясти лопаткой, но не хватило памяти.... :-(
+
     curToiletStep++;
     ToiletStep[curToiletStep].Name = "Lopate up";
     ToiletStep[curToiletStep].pin = "1";
@@ -253,7 +237,7 @@ void setup() {
     ToiletStep[curToiletStep].pin = "11";
     ToiletStep[curToiletStep].TimeStep = 80;
   */
-  
+
   // Сбрасываем какашки
   curToiletStep++;
   ToiletStep[curToiletStep].Name = "Lopate up";
@@ -317,7 +301,7 @@ void setup() {
   // ToiletStep[curToiletStep].Start();
   help(); // Печатаем подсказку.
   /*
-   * Заготовка для чтения статуса из памяти
+     Заготовка для чтения статуса из памяти
   	if (StatusRead()==1)
   	{
   		programRun = 1;
@@ -326,8 +310,6 @@ void setup() {
   	}
   */
 }
-
-
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -347,7 +329,6 @@ void loop() {
     }
     return;
   }
-
 
   if (millis() > NextRun * 1000 && programRun == 0)
     programStart();
@@ -387,8 +368,6 @@ void loop() {
       //Serial.println("\n\rGet Number:"+curToiletStep_str);
       curToiletStep = curToiletStep_str.toInt();
 
-
-
       if (curToiletStep < MAX_STEP)
       {
         Serial.println("\n\r" + String( millis() / 100) + ": Start step: " + String(curToiletStep) + " - " + ToiletStep[curToiletStep].Name);
@@ -425,9 +404,9 @@ void loop() {
   }
 }
 
-/* Тестируем работу управления пинами. 
- * Передаем в стиле "*01*01"  
- */
+/* Тестируем работу управления пинами.
+   Передаем в стиле "*01*01"
+*/
 void runTest(String TestPin)
 {
   Serial.println("\n\rTest");
