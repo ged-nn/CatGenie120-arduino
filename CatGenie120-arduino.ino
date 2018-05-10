@@ -319,7 +319,7 @@ void loop() {
   // if (false) ToiletStep[MAX_STEP-1].Start();
 
   // На случай переполнения millis()
-  // Если слишком большое, то настраиваем запуск программы на переполнение и ждем, когда же таки переполнится.
+  // Если слишком большое, то настраиваем запуск программы на время START_TIMEOUT и ждем, когда же таки переполнится.
   if (millis() > (MAX_UPTIME - TEST_WORK_TIME) && programRun == 0)
   {
     if (NextRun > START_TIMEOUT)
@@ -329,7 +329,7 @@ void loop() {
     }
     return;
   }
-
+  // Если наступило время запуска программы, то запускаем ее.
   if (millis() > NextRun * 1000 && programRun == 0)
     programStart();
 
