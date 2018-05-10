@@ -47,10 +47,10 @@ class ToiletStep {
     String Name; // Название шага
     String pin; // Маска нужных пинов
     unsigned long TimeStep; // Время действия шага в десятых секунды
-    void Start();
-    void Stop();
-    int checkRun();
-    int checkTime();
+    void Start(); // Запуск шага
+    void Stop();  // Остановка шага
+    int checkRun(); // Проверка, выполняется ли текущий шаг.
+    int checkTime();  // Проверка, сколько еще осталось выполняться данному шагу.
   private:
     int _run;
     unsigned long _startStep, _stopStep;
@@ -98,24 +98,28 @@ int ToiletStep::checkRun() {
   return _run;
 }
 
-
-
 int ToiletStep::checkTime() {
+  /* Возвращаемые значения
+   *  -1 - Время запуска еще не наступило
+   *  0 - Время запуска наступило, время остановки нет
+   *  1 - Время запуска и остановки прошло
+   */
   int result = 0;
   if (_startStep > millis()) result = -1;
   else if (_stopStep < millis()) result = 0;
   else result = 1;
 
-
-
   // Serial.println("Time step:" + Name + ":" + result);
   return result;
 }
 
+/* Управления пинами на основании строки в стиле "*01*01"
+ * 0 - отключить пин
+ * 1 - включить пин
+ * любой другой символ - не менять значение пина
+ */
 void pinSetState(String pinList)
 {
-
-
   int i, a;
   int length = pinList.length();
   int newState;
@@ -126,15 +130,9 @@ void pinSetState(String pinList)
     if (StatePin != "1" && StatePin != "0")
     {
       // Serial.println("pin " + String(i) + " ignored " + StatePin);
-
-
-
       // Serial.println("String: "+pinList+" CurChar:" + pinList.substring(i, i+1));
       continue;
     }
-
-
-
     a = i + PIN_CORRECT;
     pinMode(a, OUTPUT);
     if (StatePin == "1")
@@ -146,16 +144,17 @@ void pinSetState(String pinList)
     { if (!PIN_ON) newState = 1;
       else newState = 0;
     }
-
-
-
     digitalWrite(a, newState);
     Serial.println("pin " + String(i) + ":" + String(a) + " set to " + String(newState));
   }
 }
 
-
-
+/* Не совсем понимаю, что я тут наделал и главное - зачем... 
+ *  Так же не могу осознать, как оно работает. :-)
+ *  
+ *  Похоже, передаем строчку с пинами, которые нужно перевести в нужное положение:
+ *  Строка вида ххх1х1х1, где 1 - нужный пин, любой другой пин не учитывается.
+ */
 void pinSetState(String pinList, int State)
 {
   int i, ii;
@@ -163,12 +162,7 @@ void pinSetState(String pinList, int State)
   int newState;
   String StatePin, StatePinNew;
 
-
-
   Serial.println("Set to state: " + pinList + " set to " + String(State));
-
-
-
   for (i = 0; i < length; i++)
   {
     StatePin = pinList.substring(i, i + 1);
@@ -180,48 +174,29 @@ void pinSetState(String pinList, int State)
       for (ii = 0; ii < i; ii++)
       {
         // Serial.println("Set to state4: " + StatePinNew + " set to " + String(ii));
-
-
-
         StatePinNew += "-";
       }
       StatePinNew += String(State);
       //Serial.println("Run set pin: " + StatePinNew + " set to " + String(ii));
-
-
-
       pinSetState(StatePinNew);
     }
   }
 }
 
-
-
-ToiletStep ToiletStep[15];
+ToiletStep ToiletStep[15]; // Init Steps for work
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   delay(10);
   // pinSetState("01-0_1");
-
-
-
   // pinSetState("11111111");
   // delay(5000);
   Serial.println("Start: " );
-
-
-
   inputString.reserve(200);
-
-
-
   pinSetState("00000000");
   /*
     pinSetState("1");
-
-
 
     runTest("1");
     runTest("01");
@@ -231,8 +206,6 @@ void setup() {
     runTest("000001");
     runTest("0000001");
 
-
-
   */
   // Lopata down pin 1+2
   // Lopata up pin 1
@@ -241,64 +214,51 @@ void setup() {
   // Kanalizaciya - pin 5
   // Water - pin 6
 
-
-
+  // Пауза перед работой. Вдруг хозяин передумает запускать. :-)
   curToiletStep = 0;
   ToiletStep[curToiletStep].Name = "Wait timeout";
   ToiletStep[curToiletStep].pin = "";
   ToiletStep[curToiletStep].TimeStep = 300;
 
-
-
+  // Опускаем лопату
   curToiletStep++;
   ToiletStep[curToiletStep].Name = "Lopate down";
   ToiletStep[curToiletStep].pin = "111";
   ToiletStep[curToiletStep].TimeStep = 170;
 
-
-
+  // Крутим лоток чтобы собрать твердые отходы
   curToiletStep++;
   ToiletStep[curToiletStep].Name = "Rotate lotok";
   ToiletStep[curToiletStep].pin = "//1";
   ToiletStep[curToiletStep].TimeStep = 5 * 60 * 10;
 
-
-
-  // Трясем лопаткой
+  // Трясем лопаткой, чтобы скинуть наполнитель
   curToiletStep++;
   ToiletStep[curToiletStep].Name = "Lopate up";
   ToiletStep[curToiletStep].pin = "1";
   ToiletStep[curToiletStep].TimeStep = 120;
-
-
-
   curToiletStep++;
   ToiletStep[curToiletStep].Name = "Lopate down";
   ToiletStep[curToiletStep].pin = "11";
   ToiletStep[curToiletStep].TimeStep = 80;
   /*
+   * Хотели еще потрясти лопаткой, но не хватило памяти.... :-(
+   * 
     curToiletStep++;
     ToiletStep[curToiletStep].Name = "Lopate up";
     ToiletStep[curToiletStep].pin = "1";
     ToiletStep[curToiletStep].TimeStep = 80;
-
-
-
     curToiletStep++;
     ToiletStep[curToiletStep].Name = "Lopate down";
     ToiletStep[curToiletStep].pin = "11";
     ToiletStep[curToiletStep].TimeStep = 80;
-
-
-
   */
+  
   // Сбрасываем какашки
   curToiletStep++;
   ToiletStep[curToiletStep].Name = "Lopate up";
   ToiletStep[curToiletStep].pin = "1";
   ToiletStep[curToiletStep].TimeStep = 125;
-
-
 
   // Опускаем лопатку, чтобы помыть
   curToiletStep++;
@@ -306,20 +266,18 @@ void setup() {
   ToiletStep[curToiletStep].pin = "11";
   ToiletStep[curToiletStep].TimeStep = 140;
 
-
-
+  // Моем лоток. Т.е. включаем воду и крутим.
   curToiletStep++;
   ToiletStep[curToiletStep].Name = "Moem lotok";
   ToiletStep[curToiletStep].pin = "//1//1";
   // ToiletStep[curToiletStep].pin = "/////1";
   ToiletStep[curToiletStep].TimeStep = 900;
 
+  // Сливаем воду в канализацию
   curToiletStep++;
   ToiletStep[curToiletStep].Name = "Kanalizaciya";
   ToiletStep[curToiletStep].pin = "////1";
   ToiletStep[curToiletStep].TimeStep = 2300;
-
-
 
   // Сушим
   curToiletStep++;
@@ -347,18 +305,19 @@ void setup() {
   ToiletStep[curToiletStep].pin = "1";
   ToiletStep[curToiletStep].TimeStep = 163;
 
-
-
   MAX_STEP = curToiletStep + 1;
-  curToiletStep = 0;
-  ProgramRetry = 60 * 60;
+
+  // Инициализируем переменные и настройки
+  curToiletStep = 0; // Текущий шаг приравниаваем 0; В дальнейшем, нужно будет его читать из памяти.
+  ProgramRetry = 60 * 60; // Виимо для тестов использовалось время повтора каждый час.
   ProgramRetry = ProgramRetry * DELAY_FOR_REPEAT_PROGRAM;
 
   NextRun = START_TIMEOUT;
 
   // ToiletStep[curToiletStep].Start();
-  help();
+  help(); // Печатаем подсказку.
   /*
+   * Заготовка для чтения статуса из памяти
   	if (StatusRead()==1)
   	{
   		programRun = 1;
@@ -392,8 +351,6 @@ void loop() {
 
   if (millis() > NextRun * 1000 && programRun == 0)
     programStart();
-
-
 
   if (!ToiletStep[curToiletStep].checkRun())
   {
@@ -457,51 +414,31 @@ void loop() {
     {
       programNextStep();
     }
-
-
-
     else
     {
       programStop();
-
-
-
     }
-
-
 
     // clear the string:
     inputString = "";
     stringComplete = false;
   }
-
-
-
 }
 
-
-
+/* Тестируем работу управления пинами. 
+ * Передаем в стиле "*01*01"  
+ */
 void runTest(String TestPin)
 {
   Serial.println("\n\rTest");
-
-
-
   Serial.println("Test : " + TestPin);
-
-
-
   pinSetState(TestPin, PIN_ON);
   delay(5000);
   pinSetState(TestPin, !PIN_ON);
   delay(5000);
-
-
-
 }
 
-
-
+// Читаем информацию из com порта
 void serialEvent() {
   while (Serial.available()) {
     // get the new byte:
@@ -516,8 +453,6 @@ void serialEvent() {
   }
 }
 
-
-
 void help()
 {
   //unsigned long ProgramTime=0;
@@ -531,14 +466,8 @@ void help()
   Serial.println("s# - start # step");
   Serial.println("h - help");
   Serial.println("n|next - next step of program");
-
-
-
   Serial.println("Cur Time: " + String(millis() / 1000) + " Next run: " + String(NextRun) + " Retry every second:" + String(ProgramRetry));
   Serial.println("any key - stop all\n\r");
-
-
-
 }
 
 int totalProgramTime()
@@ -560,10 +489,7 @@ void programStart()
   Serial.println("Cur Time: " + String(millis() / 1000) + " Next run: " + String(NextRun) + " Retry every second:" + String(ProgramRetry));
   ToiletStep[curToiletStep].Start();
   StatusWrite(programRun, curToiletStep);
-
 }
-
-
 
 void programStop()
 {
@@ -572,10 +498,7 @@ void programStop()
   Serial.println("\n\r" + String( millis() / 100) + ": Stop step: " + String(curToiletStep) + " - " + ToiletStep[curToiletStep].Name);
   pinSetState("00000000");
   StatusWrite(programRun, curToiletStep);
-
 }
-
-
 
 void programNextStep()
 {
@@ -590,6 +513,3 @@ void programNextStep()
     StatusWrite(programRun, curToiletStep);
   }
 }
-
-
-
