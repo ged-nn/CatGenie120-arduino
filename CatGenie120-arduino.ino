@@ -1,6 +1,6 @@
 /*
   Прошивка для Arduino UNO для CatGenie 120.
-  (C) Ged http://ged.korshunov.ru
+  (C) Ged http://ged.korshunov.ru 1
 */
 
 #include <EEPROM.h>
